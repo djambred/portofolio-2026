@@ -1,0 +1,811 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "migrate-seed-via-docker",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan migrate --seed",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "check-filament-admin-routes",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan route:list --path=admin",
+			"problemMatcher": []
+		},
+		{
+			"label": "install-dompdf",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php composer require barryvdh/laravel-dompdf:^3.0",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "check-cv-routes",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan route:list --path=cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-test-cv-endpoints",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && echo '---' && curl -k -I https://portofolio.test/cv/download",
+			"problemMatcher": []
+		},
+		{
+			"label": "tail-laravel-log",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php sh -lc \"tail -n 120 storage/logs/laravel.log\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-test-cv-endpoints-2",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && echo '---' && curl -k -I https://portofolio.test/cv/download",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-education-model-table-runtime",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan tinker --execute=\"echo (new App\\\\Models\\\\Education)->getTable();\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-db-tables",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T db mysql -uroot -pp455w0rd -D portofolio -e \"SHOW TABLES LIKE 'education'; SHOW TABLES LIKE 'educations';\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "clear-cache-and-restart-php",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan optimize:clear && docker compose -f docker-compose.yml restart php nginx",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-services-after-restart",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml ps",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-education-count-query",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan tinker --execute=\"echo App\\\\Models\\\\Education::count();\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "reseed-cv-data",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan db:seed --class=Database\\\\Seeders\\\\CvJefrySeeder",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-education-count-after-seed",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan tinker --execute=\"echo App\\\\Models\\\\Education::count();\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-after-fix",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "migrate-publications",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan migrate",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-publication-routes",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan route:list --path=admin/publications",
+			"problemMatcher": []
+		},
+		{
+			"label": "clear-optimize-after-publication",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan optimize:clear",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-after-publication-module",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && echo '---' && curl -k -I https://portofolio.test/cv/download",
+			"problemMatcher": []
+		},
+		{
+			"label": "fetch-sinta-profile-html",
+			"type": "shell",
+			"command": "curl -L --max-time 30 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820' | sed -n '1,220p'",
+			"problemMatcher": []
+		},
+		{
+			"label": "extract-sinta-articles-raw",
+			"type": "shell",
+			"command": "curl -L --max-time 40 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820' | tr '\\n' ' ' | sed 's/<div class=\"ar-list-item/\\n<div class=\"ar-list-item/g' | sed -n '1,80p'",
+			"problemMatcher": []
+		},
+		{
+			"label": "parse-sinta-articles",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php -r '$h=file_get_contents(\"https://sinta.kemdiktisaintek.go.id/authors/profile/6758820\"); preg_match_all(\"#<div class=\\\"ar-list-item.*?</div>\\s*</div>#si\",$h,$m); $i=1; foreach($m[0] as $b){ preg_match(\"#<div class=\\\"ar-title\\\">\\s*<a[^>]*href=\\\"([^\\\"]+)\\\"[^>]*>(.*?)</a>#si\",$b,$t); preg_match(\"#<a[^>]*class=\\\"ar-pub\\\"[^>]*>(.*?)</a>#si\",$b,$p); preg_match(\"#(\\d+)\\s*cited#si\",$b,$c); $title=trim(strip_tags($t[2]??\"\")); $url=$t[1]??\"\"; $pub=trim(strip_tags($p[1]??\"\")); $cite=$c[1]??\"0\"; if($title!==\"\"){ echo $i.\"|\".$title.\"|\".$pub.\"|\".$cite.\"|\".$url.PHP_EOL; $i++; }}'",
+			"problemMatcher": []
+		},
+		{
+			"label": "parse-sinta-articles-via-curl",
+			"type": "shell",
+			"command": "curl -L --max-time 40 -A 'Mozilla/5.0' 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820' | docker compose -f docker-compose.yml exec -T php php -r '$h=stream_get_contents(STDIN); preg_match_all(\"#<div class=\\\"ar-list-item.*?</div>\\\\s*</div>#si\",$h,$m); $i=1; foreach($m[0] as $b){ preg_match(\"#<div class=\\\"ar-title\\\">\\\\s*<a[^>]*href=\\\"([^\\\"]+)\\\"[^>]*>(.*?)</a>#si\",$b,$t); preg_match(\"#<a[^>]*class=\\\"ar-pub\\\"[^>]*>(.*?)</a>#si\",$b,$p); preg_match(\"#(\\\\d+)\\\\s*cited#si\",$b,$c); $title=trim(strip_tags($t[2]??\"\")); $url=$t[1]??\"\"; $pub=trim(strip_tags($p[1]??\"\")); $cite=$c[1]??\"0\"; if($title!==\"\"){ echo $i.\"|\".$title.\"|\".$pub.\"|\".$cite.\"|\".$url.PHP_EOL; $i++; }}'",
+			"problemMatcher": []
+		},
+		{
+			"label": "migrate-publication-fields",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan migrate",
+			"problemMatcher": []
+		},
+		{
+			"label": "import-sinta-all-categories",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan sinta:import-outputs 6758820 --profile-id=1",
+			"problemMatcher": []
+		},
+		{
+			"label": "inspect-sinta-login-form",
+			"type": "shell",
+			"command": "curl -L --max-time 40 -A 'Mozilla/5.0' 'https://sinta.kemdiktisaintek.go.id/logins' | sed -n '1,220p'",
+			"problemMatcher": []
+		},
+		{
+			"label": "import-sinta-all-categories-auth",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan sinta:import-outputs 6758820 --profile-id=1 --username='jefry.sunupurwa@esaunggul.ac.id' --password='123Login123'",
+			"problemMatcher": []
+		},
+		{
+			"label": "import-sinta-all-categories-auth-2",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan sinta:import-outputs 6758820 --profile-id=1 --username='jefry.sunupurwa@esaunggul.ac.id' --password='123Login123'",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-sinta-import-summary",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan tinker --execute=\"App\\\\Models\\\\Publication::selectRaw('output_type, source_view, count(*) as total')->where('profile_id',1)->groupBy('output_type','source_view')->orderBy('output_type')->orderBy('source_view')->get()->each(fn($r)=>print($r->output_type.'|'.$r->source_view.'|'.$r->total.PHP_EOL));\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-sinta-import-summary-sql",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT output_type, source_view, COUNT(*) AS total FROM publications WHERE profile_id = 1 GROUP BY output_type, source_view ORDER BY output_type, source_view;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "inspect-scholar-pagination-html",
+			"type": "shell",
+			"command": "curl -L --max-time 40 -A 'Mozilla/5.0' 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=googlescholar' | rg -n \"pagination|\\?page=|ar-list-item|next|rel=\\\"next\\\"\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-scholar-page-links",
+			"type": "shell",
+			"command": "curl -L --max-time 40 -A 'Mozilla/5.0' 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=googlescholar' | grep -Eo 'page=[0-9]+' | sort -u | sed -n '1,40p'",
+			"problemMatcher": []
+		},
+		{
+			"label": "test-scholar-page2-items",
+			"type": "shell",
+			"command": "curl -L --max-time 40 -A 'Mozilla/5.0' 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=googlescholar&page=2' | grep -o 'ar-list-item' | wc -l",
+			"problemMatcher": []
+		},
+		{
+			"label": "test-scholar-page3-items",
+			"type": "shell",
+			"command": "curl -L --max-time 40 -A 'Mozilla/5.0' 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=googlescholar&page=3' | grep -o 'ar-list-item' | wc -l",
+			"problemMatcher": []
+		},
+		{
+			"label": "compare-scholar-page-titles",
+			"type": "shell",
+			"command": "for p in 1 2 3; do echo \"PAGE-$p\"; curl -L --max-time 40 -A 'Mozilla/5.0' \"https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=googlescholar&page=$p\" | sed -n 's/.*<div class=\"ar-title\">[[:space:]]*<a[^>]*>\\(.*\\)<\\/a>.*/\\1/p' | sed 's/<[^>]*>//g' | head -n 3; echo '---'; done",
+			"problemMatcher": []
+		},
+		{
+			"label": "compare-scholar-pages-with-php",
+			"type": "shell",
+			"command": "for p in 1 2 3; do echo \"PAGE-$p\"; curl -L --max-time 40 -A 'Mozilla/5.0' \"https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=googlescholar&page=$p\" | docker compose -f docker-compose.yml exec -T php php -r '$h=stream_get_contents(STDIN); preg_match_all(\"#<div class=\\\"ar-title\\\">\\\\s*<a[^>]*>(.*?)</a>#si\",$h,$m); $titles=array_map(fn($t)=>trim(strip_tags(html_entity_decode($t))),$m[1]??[]); echo \"count=\".count($titles).PHP_EOL; echo \"first=\".($titles[0]??\"-\").PHP_EOL; echo \"hash=\".sha1(implode(\"|\",$titles)).PHP_EOL;' ; echo '---'; done",
+			"problemMatcher": []
+		},
+		{
+			"label": "reimport-sinta-paginated-auth",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan sinta:import-outputs 6758820 --profile-id=1 --username='jefry.sunupurwa@esaunggul.ac.id' --password='123Login123'",
+			"problemMatcher": []
+		},
+		{
+			"label": "debug-sinta-login-http",
+			"type": "shell",
+			"command": "tmpdir=$(mktemp -d) && cookie=\"$tmpdir/cookie.txt\" && login_resp=\"$tmpdir/login.out\" && profile_resp=\"$tmpdir/profile.out\" && curl -sS -D \"$login_resp\" -o /dev/null -c \"$cookie\" -b \"$cookie\" -A 'Mozilla/5.0' -e 'https://sinta.kemdiktisaintek.go.id/logins' -X POST 'https://sinta.kemdiktisaintek.go.id/logins/do_login' --data-urlencode 'username=jefry.sunupurwa@esaunggul.ac.id' --data-urlencode 'password=123Login123' && echo '---LOGIN HEADERS---' && sed -n '1,40p' \"$login_resp\" && curl -sS -L -A 'Mozilla/5.0' -c \"$cookie\" -b \"$cookie\" 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=googlescholar&page=2' > \"$profile_resp\" && echo '---PROFILE MARKERS---' && (grep -Eo 'Logout|SINTA User Login|logins/do_login|my profile|dashboard|ar-list-item' \"$profile_resp\" | head -n 20 || true) && echo '---COOKIE COUNT---' && wc -l \"$cookie\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "debug-sinta-login-markers",
+			"type": "shell",
+			"command": "tmpdir=$(mktemp -d) && cookie=\"$tmpdir/cookie.txt\" && curl -sS --max-time 30 -D - -o /dev/null -c \"$cookie\" -b \"$cookie\" -A 'Mozilla/5.0' -e 'https://sinta.kemdiktisaintek.go.id/logins' -X POST 'https://sinta.kemdiktisaintek.go.id/logins/do_login' --data-urlencode 'username=jefry.sunupurwa@esaunggul.ac.id' --data-urlencode 'password=123Login123' | sed -n '1,30p' && echo '---' && curl -sS --max-time 30 -L -A 'Mozilla/5.0' -c \"$cookie\" -b \"$cookie\" 'https://sinta.kemdiktisaintek.go.id' | grep -Eo 'Logout|logins|Registration|SINTA User Login|Welcome|Dashboard' | head -n 20",
+			"problemMatcher": []
+		},
+		{
+			"label": "count-scholar-pages-auth",
+			"type": "shell",
+			"command": "tmpdir=$(mktemp -d) && cookie=\"$tmpdir/cookie.txt\" && curl -sS --max-time 30 -o /dev/null -c \"$cookie\" -b \"$cookie\" -A 'Mozilla/5.0' -e 'https://sinta.kemdiktisaintek.go.id/logins' -X POST 'https://sinta.kemdiktisaintek.go.id/logins/do_login' --data-urlencode 'username=jefry.sunupurwa@esaunggul.ac.id' --data-urlencode 'password=123Login123' && for p in 1 2 3; do echo -n \"page$p=\"; curl -sS --max-time 30 -L -A 'Mozilla/5.0' -c \"$cookie\" -b \"$cookie\" \"https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=googlescholar&page=$p\" | docker compose -f docker-compose.yml exec -T php php -r '$h=stream_get_contents(STDIN); preg_match_all(\"#<div class=\\\"ar-title\\\">\\\\s*<a[^>]*>(.*?)</a>#si\",$h,$m); echo count($m[1]??[]),PHP_EOL;'; done",
+			"problemMatcher": []
+		},
+		{
+			"label": "reimport-sinta-after-pagination-fix",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T php php artisan sinta:import-outputs 6758820 --profile-id=1 --username='jefry.sunupurwa@esaunggul.ac.id' --password='123Login123'",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-publication-counts-after-fix",
+			"type": "shell",
+			"command": "docker compose -f docker-compose.yml exec -T db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT source_view, COUNT(*) total FROM publications WHERE profile_id=1 GROUP BY source_view ORDER BY source_view;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-home-livewire",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-home-livewire-2",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-home-after-alpine",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-home-after-alpine-ui",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-home-unified",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-download-pdf",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/download",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-tabs",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-social-badges",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-photo",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-avatar-fallback",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-avatar-fixed",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-no-admin-button",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-home-no-admin-cta",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-download-polished",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/download",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-rapi",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/download",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-social-badges",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/download",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-preview-route",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-show-preview-button",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-after-syntax-fix",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-wkhtmltopdf-bin",
+			"type": "shell",
+			"command": "docker compose exec php sh -lc 'command -v wkhtmltopdf || true'",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-wkhtmltopdf-version",
+			"type": "shell",
+			"command": "docker compose exec php sh -lc 'command -v wkhtmltopdf && wkhtmltopdf --version'",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-wkhtmltopdf-after-rebuild",
+			"type": "shell",
+			"command": "docker compose exec php sh -lc 'command -v wkhtmltopdf || true'",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-snappy-preview",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-snappy-download",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/download",
+			"problemMatcher": []
+		},
+		{
+			"label": "tail-laravel-log-snappy",
+			"type": "shell",
+			"command": "tail -n 140 src/storage/logs/laravel.log",
+			"problemMatcher": []
+		},
+		{
+			"label": "composer-require-h4cc",
+			"type": "shell",
+			"command": "docker compose exec php composer require h4cc/wkhtmltopdf-amd64:^0.12.6",
+			"problemMatcher": []
+		},
+		{
+			"label": "composer-require-h4cc-v124",
+			"type": "shell",
+			"command": "docker compose exec php composer require h4cc/wkhtmltopdf-amd64:0.12.4",
+			"problemMatcher": []
+		},
+		{
+			"label": "fix-wkhtml-binary-perms",
+			"type": "shell",
+			"command": "docker compose exec php sh -lc 'chmod +x /var/www/html/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64 && ls -l /var/www/html/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64'",
+			"problemMatcher": []
+		},
+		{
+			"label": "clear-laravel-cache-after-snappy",
+			"type": "shell",
+			"command": "docker compose exec php php artisan optimize:clear",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-wkhtml-preview",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-wkhtml-download",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/download",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-spbe-work-experiences",
+			"type": "shell",
+			"command": "docker compose exec php php artisan tinker --execute=\"use App\\Models\\WorkExperience; $rows = WorkExperience::query()->where('position_title', 'like', '%SPBE%')->orWhere('position_title', 'like', '%Narasumber Review Arsitektur%')->orderBy('start_date')->get(['company_name','position_title','start_date','end_date']); foreach ($rows as $r) { echo $r->position_title.' | '.$r->company_name.' | '.$r->start_date.' -> '.$r->end_date.PHP_EOL; }\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-spbe-work-experiences-safe",
+			"type": "shell",
+			"command": "docker compose exec php php artisan tinker --execute=\"use App\\Models\\WorkExperience; \\$rows = WorkExperience::query()->where('position_title', 'like', '%SPBE%')->orWhere('position_title', 'like', '%Narasumber Review Arsitektur%')->orderBy('start_date')->get(['company_name','position_title','start_date','end_date']); foreach (\\$rows as \\$r) { echo \\$r->position_title.' | '.\\$r->company_name.' | '.\\$r->start_date.' -> '.\\$r->end_date.PHP_EOL; }\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-after-spbe-add",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-profile-id-visible",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT id, full_name, is_visible FROM profiles WHERE is_visible = 1 ORDER BY id LIMIT 5;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-spbe-rows-existing",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT id, profile_id, position_title, company_name, DATE(start_date) AS start_date, DATE(end_date) AS end_date FROM work_experiences WHERE position_title LIKE '%SPBE%' OR position_title LIKE '%Narasumber Review Arsitektur%' ORDER BY start_date;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "migrate-academic-fields",
+			"type": "shell",
+			"command": "docker compose exec php php artisan migrate --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "update-profile-nidn-jabatan",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"UPDATE profiles SET nidn='0316019003', academic_position='Lektor' WHERE is_visible = 1; SELECT id, full_name, nidn, academic_position FROM profiles WHERE is_visible = 1;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-with-nidn",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-with-nidn",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "seed-cv-jefry-sync",
+			"type": "shell",
+			"command": "docker compose exec php php artisan db:seed --class=CvJefrySeeder --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-seeded-work-exp",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT position_title,start_date,end_date,sort_order FROM work_experiences ORDER BY sort_order;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "reseed-jefry-for-mine-photo",
+			"type": "shell",
+			"command": "docker compose exec php php artisan db:seed --class=CvJefrySeeder --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-preview-after-avatar-fix",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-profile-photo-path",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT id, full_name, photo_path FROM profiles WHERE is_visible = 1;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "import-sinta-outputs-now",
+			"type": "shell",
+			"command": "docker compose exec php php artisan sinta:import-outputs 6758820 --username='jefry.sunupurwa@esaunggul.ac.id' --password='123Login123'",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-sinta-import-summary",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT source_view, output_type, COUNT(*) AS total FROM publications GROUP BY source_view, output_type ORDER BY source_view, output_type;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-publication-counts-sql",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT source_view, output_type, COUNT(*) AS total FROM publications WHERE profile_id = 1 GROUP BY source_view, output_type ORDER BY source_view, output_type;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "reseed-lecturer-summary",
+			"type": "shell",
+			"command": "docker compose exec php php artisan db:seed --class=CvJefrySeeder --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-lecturer-summary-db",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT LEFT(summary_id, 180) AS summary_id_preview, LEFT(summary_en, 180) AS summary_en_preview FROM profiles WHERE is_visible = 1 LIMIT 1;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "reseed-dual-summary",
+			"type": "shell",
+			"command": "docker compose exec php php artisan db:seed --class=CvJefrySeeder --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "reseed-summary-role-format",
+			"type": "shell",
+			"command": "docker compose exec php php artisan db:seed --class=CvJefrySeeder --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "migrate-role-summaries",
+			"type": "shell",
+			"command": "docker compose exec php php artisan migrate --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "reseed-role-summaries",
+			"type": "shell",
+			"command": "docker compose exec php php artisan db:seed --class=CvJefrySeeder --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-new-summary-columns",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT LEFT(academic_summary_id,120) AS academic_id, LEFT(professional_summary_id,120) AS professional_id FROM profiles WHERE is_visible = 1 LIMIT 1;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-after-summary-split",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-full-publication-page",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-after-publication-polish",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-after-remove-note",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-after-publication-title-center",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "reimport-sinta-with-score",
+			"type": "shell",
+			"command": "docker compose exec php php artisan sinta:import-outputs 6758820 --username='jefry.sunupurwa@esaunggul.ac.id' --password='123Login123'",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-publication-totals-and-score",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT source_view, output_type, COUNT(*) AS total FROM publications WHERE profile_id = 1 GROUP BY source_view, output_type ORDER BY source_view, output_type; SELECT ROUND(COALESCE(SUM(sinta_score),0),2) AS total_sinta_score FROM publications WHERE profile_id = 1 AND indexing_source='sinta'; SELECT COUNT(*) AS filled_sinta_score_rows FROM publications WHERE profile_id = 1 AND sinta_score IS NOT NULL;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "inspect-sinta-overview-score-markers",
+			"type": "shell",
+			"command": "tmpdir=$(mktemp -d) && cookie=\"$tmpdir/cookie.txt\" && page=\"$tmpdir/overview.html\" && curl -sS -o /dev/null -c \"$cookie\" -b \"$cookie\" -A 'Mozilla/5.0' -e 'https://sinta.kemdiktisaintek.go.id/logins' -X POST 'https://sinta.kemdiktisaintek.go.id/logins/do_login' --data-urlencode 'username=jefry.sunupurwa@esaunggul.ac.id' --data-urlencode 'password=123Login123' && curl -sS -L -A 'Mozilla/5.0' -c \"$cookie\" -b \"$cookie\" 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=overview' > \"$page\" && echo '---SCORE MARKERS---' && (grep -Eio 'sinta score|overall score|score [0-9]+|score</|citation|h-index|i10|quartile' \"$page\" | head -n 40 || true) && echo '---HAS LOGIN PAGE?---' && (grep -Eio 'SINTA User Login|do_login' \"$page\" | head -n 5 || true)",
+			"problemMatcher": []
+		},
+		{
+			"label": "reimport-sinta-score-parser-v2",
+			"type": "shell",
+			"command": "docker compose exec php php artisan sinta:import-outputs 6758820 --username='jefry.sunupurwa@esaunggul.ac.id' --password='123Login123'",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-sinta-score-after-parser-v2",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT ROUND(COALESCE(SUM(sinta_score),0),2) AS total_sinta_score, COUNT(*) AS total_rows, SUM(CASE WHEN sinta_score IS NOT NULL THEN 1 ELSE 0 END) AS filled_score_rows FROM publications WHERE profile_id = 1 AND indexing_source='sinta';\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "migrate-sinta-overall-score-column",
+			"type": "shell",
+			"command": "docker compose exec php php artisan migrate --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "reseed-set-sinta-overall-480",
+			"type": "shell",
+			"command": "docker compose exec php php artisan db:seed --class=CvJefrySeeder --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-sinta-overall-480",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT id, full_name, sinta_overall_score FROM profiles WHERE is_visible = 1;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-pdf-after-score-480",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "recheck-cv-and-pdf-status",
+			"type": "shell",
+			"command": "curl -k -I -m 30 https://portofolio.test/cv; echo '---'; curl -k -I -m 30 https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-nginx-error-log",
+			"type": "shell",
+			"command": "docker compose logs --tail=120 nginx",
+			"problemMatcher": []
+		},
+		{
+			"label": "check-laravel-log-tail",
+			"type": "shell",
+			"command": "docker compose exec php sh -lc \"tail -n 120 storage/logs/laravel.log\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "reload-nginx-config",
+			"type": "shell",
+			"command": "docker compose exec nginx nginx -s reload",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-endpoints-post-timeout-fix",
+			"type": "shell",
+			"command": "curl -k -I -m 30 https://portofolio.test/cv && curl -k -I -m 30 https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "migrate-sinta-profile-metrics",
+			"type": "shell",
+			"command": "docker compose exec php php artisan migrate --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "reseed-default-sinta-metrics",
+			"type": "shell",
+			"command": "docker compose exec php php artisan db:seed --class=CvJefrySeeder --force",
+			"problemMatcher": []
+		},
+		{
+			"label": "run-sinta-import-new-metrics-crawler",
+			"type": "shell",
+			"command": "docker compose exec php php artisan sinta:import-outputs 6758820 --username='jefry.sunupurwa@esaunggul.ac.id' --password='123Login123'",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-sinta-profile-metrics-values",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT id, full_name, sinta_overall_score, sinta_score_3yr, affil_score, affil_score_3yr FROM profiles WHERE is_visible = 1;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-pdf-after-sinta-metrics-update",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "inspect-sinta-overview-html-raw",
+			"type": "shell",
+			"command": "tmpdir=$(mktemp -d) && cookie=\"$tmpdir/cookie.txt\" && page=\"$tmpdir/overview.html\" && curl -sS -o /dev/null -c \"$cookie\" -b \"$cookie\" -A 'Mozilla/5.0' -e 'https://sinta.kemdiktisaintek.go.id/logins' -X POST 'https://sinta.kemdiktisaintek.go.id/logins/do_login' --data-urlencode 'username=jefry.sunupurwa@esaunggul.ac.id' --data-urlencode 'password=123Login123' && curl -sS -L -A 'Mozilla/5.0' -c \"$cookie\" -b \"$cookie\" 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=overview' > \"$page\" && echo '---LABEL CONTEXT---' && (rg -n \"SINTA Score Overall|SINTA Score 3Yr|Affil Score|scoreOverall|score3|affil|overview|chart|metric|counter\" \"$page\" | head -n 80 || true) && echo '---JSON CANDIDATES---' && (rg -n \"\\{.*score.*\\}|\\[.*score.*\\]|overall.*[0-9]+|3yr.*[0-9]+\" \"$page\" | head -n 80 || true)",
+			"problemMatcher": []
+		},
+		{
+			"label": "inspect-overview-with-grep",
+			"type": "shell",
+			"command": "tmpdir=$(mktemp -d) && cookie=\"$tmpdir/cookie.txt\" && page=\"$tmpdir/overview.html\" && curl -sS -o /dev/null -c \"$cookie\" -b \"$cookie\" -A 'Mozilla/5.0' -e 'https://sinta.kemdiktisaintek.go.id/logins' -X POST 'https://sinta.kemdiktisaintek.go.id/logins/do_login' --data-urlencode 'username=jefry.sunupurwa@esaunggul.ac.id' --data-urlencode 'password=123Login123' && curl -sS -L -A 'Mozilla/5.0' -c \"$cookie\" -b \"$cookie\" 'https://sinta.kemdiktisaintek.go.id/authors/profile/6758820/?view=overview' > \"$page\" && echo '---LABEL CONTEXT---' && (grep -En \"SINTA Score Overall|SINTA Score 3Yr|Affil Score|scoreOverall|score3|affil|overview|chart|metric|counter\" \"$page\" | head -n 120 || true) && echo '---SURROUNDING LINES---' && line=$(grep -En \"SINTA Score Overall|SINTA Score 3Yr|Affil Score\" \"$page\" | head -n 1 | cut -d: -f1) && if [ -n \"$line\" ]; then start=$((line-10)); end=$((line+20)); sed -n \"${start},${end}p\" \"$page\"; else echo 'No direct label found'; fi",
+			"problemMatcher": []
+		},
+		{
+			"label": "run-sinta-import-metrics-parser-final",
+			"type": "shell",
+			"command": "docker compose exec php php artisan sinta:import-outputs 6758820 --username='jefry.sunupurwa@esaunggul.ac.id' --password='123Login123'",
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-crawled-profile-metrics-final",
+			"type": "shell",
+			"command": "docker compose exec db mysql -uroot -pp455w0rd -D portofolio -e \"SELECT id, full_name, sinta_overall_score, sinta_score_3yr, affil_score, affil_score_3yr FROM profiles WHERE is_visible = 1;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-pdf-after-crawler-adjustment",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-after-layout-polish",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-publications-refresh",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && echo '---' && curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-compact-metrics",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-summary-cards",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-and-pdf-after-compact-cards",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv && echo '---' && curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-two-metrics",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-pdf-no-decimal-sinta",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv/preview",
+			"problemMatcher": []
+		},
+		{
+			"label": "smoke-cv-no-decimal-sinta-overall",
+			"type": "shell",
+			"command": "curl -k -I https://portofolio.test/cv",
+			"problemMatcher": []
+		}
+	]
+}
