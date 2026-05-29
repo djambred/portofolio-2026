@@ -196,6 +196,14 @@ if [ ! -d /var/www/html/vendor ]; then
   composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
+# Make wkhtmltopdf available on PATH from Composer package for legacy config/task compatibility.
+WKHTML_H4CC_BIN="/var/www/html/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64"
+if [ -f "$WKHTML_H4CC_BIN" ]; then
+  chmod +x "$WKHTML_H4CC_BIN" || true
+  ln -sf "$WKHTML_H4CC_BIN" /usr/local/bin/wkhtmltopdf
+  ln -sf /usr/local/bin/wkhtmltopdf /usr/bin/wkhtmltopdf
+fi
+
 # Step 5: Generate app key if not already present
 if [ ! -f /var/www/html/storage/oauth-private.key ]; then
   echo "🔐 Generating Laravel app key..."

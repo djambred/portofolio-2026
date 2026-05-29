@@ -307,7 +307,33 @@
                         ->first(fn ($key) => $publicationTabs[$key]['items']->isNotEmpty()) ?? 'scopus';
                 @endphp
 
-                <section x-data="{ tab: '{{ $defaultPublicationTab }}' }" class="mt-6 rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6">
+                <section
+                    x-data="{
+                        tab: '{{ $defaultPublicationTab }}',
+                        perPage: 5,
+                        pages: {
+                            @foreach($publicationTabs as $tabKey => $_tabConfig)
+                                '{{ $tabKey }}': 1{{ !$loop->last ? ',' : '' }}
+                            @endforeach
+                        },
+                        setTab(key) {
+                            this.tab = key;
+                            if (!this.pages[key]) {
+                                this.pages[key] = 1;
+                            }
+                        },
+                        totalPages(key, totalItems) {
+                            return Math.max(1, Math.ceil(totalItems / this.perPage));
+                        },
+                        prevPage(key) {
+                            this.pages[key] = Math.max(1, this.pages[key] - 1);
+                        },
+                        nextPage(key, totalItems) {
+                            this.pages[key] = Math.min(this.totalPages(key, totalItems), this.pages[key] + 1);
+                        }
+                    }"
+                    class="mt-6 rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6"
+                >
                     <div class="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
                         <h2 class="font-['Space_Grotesk'] text-xl font-semibold">Publications</h2>
                         <p class="text-sm text-zinc-400">Publication summary by source and output type</p>
@@ -345,7 +371,7 @@
                         @foreach($publicationTabs as $key => $tabConfig)
                             <button
                                 type="button"
-                                @click="tab = '{{ $key }}'"
+                                @click="setTab('{{ $key }}')"
                                 :class="tab === '{{ $key }}' ? 'bg-cyan-300 text-zinc-900 border-cyan-200' : 'bg-zinc-900 text-zinc-300 border-zinc-700'"
                                 class="rounded-full border px-3 py-1.5 text-xs font-semibold transition"
                             >
@@ -356,8 +382,11 @@
 
                     @foreach($publicationTabs as $key => $tabConfig)
                         <div x-show="tab === '{{ $key }}'" x-transition.opacity x-cloak class="space-y-4">
-                            @forelse($tabConfig['items'] as $publication)
-                                <article class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+                            @forelse($tabConfig['items'] as $index => $publication)
+                                <article
+                                    x-show="{{ $index }} >= ((pages['{{ $key }}'] - 1) * perPage) && {{ $index }} < (pages['{{ $key }}'] * perPage)"
+                                    class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4"
+                                >
                                     <h3 class="font-semibold">{{ $publication->title }}</h3>
                                     <p class="mt-1 text-sm text-zinc-300">
                                         {{ $publication->journal_name }}
@@ -394,6 +423,34 @@
                                     Belum ada data {{ $tabConfig['label'] }}.
                                 </div>
                             @endforelse
+
+                            @if($tabConfig['items']->count() > 5)
+                                <div class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-sm text-zinc-300">
+                                    <p>
+                                        Halaman
+                                        <span x-text="pages['{{ $key }}']"></span>
+                                        / <span x-text="totalPages('{{ $key }}', {{ $tabConfig['items']->count() }})"></span>
+                                    </p>
+                                    <div class="flex gap-2">
+                                        <button
+                                            type="button"
+                                            @click="prevPage('{{ $key }}')"
+                                            :disabled="pages['{{ $key }}'] === 1"
+                                            class="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            Sebelumnya
+                                        </button>
+                                        <button
+                                            type="button"
+                                            @click="nextPage('{{ $key }}', {{ $tabConfig['items']->count() }})"
+                                            :disabled="pages['{{ $key }}'] >= totalPages('{{ $key }}', {{ $tabConfig['items']->count() }})"
+                                            class="rounded-lg border border-cyan-700/60 px-3 py-1.5 text-xs font-semibold text-cyan-300 transition hover:border-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            Berikutnya
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     @endforeach
                 </section>
